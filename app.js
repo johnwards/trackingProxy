@@ -7,6 +7,9 @@ var express = require('express');
 
 var app = module.exports = express.createServer();
 
+var request = require('request');
+
+var transformContent = require('./lib/transform_content');
 // Configuration
 
 app.configure(function(){
@@ -50,43 +53,80 @@ function proxyError(res, message){
 
 var http = require('http');
 
+var TRANSFORM_CONTENT = {
+  "text/html": 1,
+  "text/css": 1
+}
+
 app.get(/\/([^\/]+)(\/.*)/, function(req,res){
 	
 	var target_host = req.params[0],
 		target_path = req.params[1];
-		
-	console.log("Visit: http://" + target_host + target_path)
-	
-	var options = {
-		host: target_host,
-		port: 80,
-		path: target_path,
-		method: req.method,
-		headers: req.headers
-	};
-	
-	http.request(options, function(subres) {
-		
-		//set the headers
-		for(var k in subres.headers){
-			res.header(k, subres.headers[k]);
-		}
-		
-		subres.on('data', function (chunk) {
-			res.write(chunk);
-		}).on('end', function(chunk){
+    var query_string = null;
+    for(var key in req.query) {
+        query_string += "&"+encodeURIComponent(key)+"="+encodeURIComponent(req.query[key]);
+    }
+    
+	console.log("Visit: http://" + target_host + target_path);
+
+    var the_url = "http://" + target_host + target_path;
+    if(query_string) {
+        the_url += "?"+query_string;
+    }
+    
+    try {
+
+        
+        var subreq  = request({uri:the_url});
+        
+        var content = '';
+        
+        subreq.on('data', function(chunk){
+            for (var i in TRANSFORM_CONTENT)
+            {
+                if(subreq.response.headers["content-type"] == undefined || subreq.response.headers["content-type"].indexOf(i) == -1) {
+			        res.write(chunk);
+                    break;
+                } else {
+                    content += chunk;
+                    break;
+                }
+            }
+        }).on('end', function(chunk){
+            for (var i in TRANSFORM_CONTENT)
+            {
+                if(subreq.response.headers["content-type"] != undefined && subreq.response.headers["content-type"].indexOf(i) == 0) {
+                    content = transformContent.transform_content(target_host,"bar", content);
+                    res.write(content);
+                    break;
+                }
+            }
+            
 			res.end();
-		}).on('error', function(error){
-				proxyError(res, "(sub response) " + error.message);
 		});
-		
-	}).on('error', function(error){
-		proxyError(res, error.message);
-	
-	}).end();//issue the sub request
-	
-	
+
+    } catch(e) {
+        res.end();
+    }
+
 })
+
+process.on('uncaughtException', function(){
+        
+});
+
+String.prototype.supplant = function (o) {
+    return this.replace(/{([^{}]*)}/g,
+        function (a, b) {
+            var r = o[b];
+            return typeof r === 'string' || typeof r === 'number' ? r : a;
+        }
+    );
+};
+
+
+
+
 
 app.listen(3000);
 console.log("Express server listening on port %d in %s mode", app.address().port, app.settings.env);

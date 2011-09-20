@@ -1,9 +1,10 @@
 {
     "name": "trackingProxy"
-  , "version": "0.0.1"
+  , "version": "0.1.0"
   , "private": true
   , "dependencies": {
       "express": "2.4.3"
     , "jade": ">= 0.0.1"
+    , "request": ">= 2.1.1"
   }
 }
