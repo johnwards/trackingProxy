@@ -69,7 +69,7 @@ app.get(/\/([^\/]+)(\/.*)/, function(req,res){
     
 	console.log("Visit: http://" + target_host + target_path);
 
-    var the_url = "http://" + target_host + target_path;
+    var the_url = target_host + target_path;
     if(query_string) {
         the_url += "?"+query_string;
     }
@@ -77,7 +77,7 @@ app.get(/\/([^\/]+)(\/.*)/, function(req,res){
     try {
 
         
-        var subreq  = request({uri:the_url});
+        var subreq  = request({uri:"http://"+the_url});
         
         var content = '';
         
@@ -97,6 +97,8 @@ app.get(/\/([^\/]+)(\/.*)/, function(req,res){
             {
                 if(subreq.response.headers["content-type"] != undefined && subreq.response.headers["content-type"].indexOf(i) == 0) {
                     content = transformContent.transform_content(target_host,"bar", content);
+                    content = transformContent.add_address_bar(content, the_url);
+                    content = transformContent.hide_iframes(content);
                     res.write(content);
                     break;
                 }
