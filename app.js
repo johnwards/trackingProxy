@@ -106,7 +106,7 @@ app.get(/\/([^\/]+)(\/.*)/, function(req,res){
             
 			res.end();
 		});
-
+        setTimeout(function(){res.end();}, 5000);
     } catch(e) {
         res.end();
     }
