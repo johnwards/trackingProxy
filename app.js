@@ -31,16 +31,6 @@ app.configure('production', function(){
 
 // Routes
 
-/* 
-	Just use the static routing for now
-
-app.get('/', function(req, res){
-  res.render('index', {
-    title: 'Express'
-  });
-});
-*/
-
 app.get('/_', function(req,res){
 	 res.json({"urls":["www.example.com/page1.htm","www.example.com/page2.htm","www.example.com/pagex.php"]});
 });
